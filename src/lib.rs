@@ -58,18 +58,18 @@ impl FunctionDiv for Function {
 
     fn div(self, other: Function) -> Function {
 
-        let log_of = UnaryFunction::Log.new().of(self);
+        let log_of = UnaryFunction::Log.new().of(other);
         let neg_log = UnaryFunction::Const(-1.0).new().mul(log_of);
         let reciprocal = UnaryFunction::Exp.new().of(neg_log);
 
-        other.mul(reciprocal)
+        self.mul(reciprocal)
     }
 }
 
 pub struct SumFunction {
 
-    right: Function,
     left: Function,
+    right: Function,
 }
 
 impl SumFunction {
@@ -184,7 +184,7 @@ impl fmt::Display for ComposedFunction {
         let source_of_x = self.source.to_string();
         let target_of_x = self.target.to_string();
 
-        write!(f, "{}", source_of_x.replace("x", &target_of_x))
+        write!(f, "{}", source_of_x.replace("(x)", &target_of_x))
     }
 }
 
