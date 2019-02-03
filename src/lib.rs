@@ -2,12 +2,20 @@
 use std::rc::Rc;
 use std::fmt;
 
+// TODO: Simplify functions
+// TODO: Parse functions
+
 pub type Function = Rc<dyn FunctionTrait>;
 
 pub trait FunctionTrait: fmt::Display {
 
     fn evaluate(&self, x: &f64) -> f64;
     fn diff(&self) -> Function;
+}
+
+pub trait FunctionEq {
+
+    fn eq(&self, other: &Self) -> bool;
 }
 
 pub trait FunctionOf {
@@ -28,6 +36,15 @@ pub trait FunctionMul {
 pub trait FunctionDiv {
 
     fn div(self, other: Self) -> Self;
+}
+
+impl FunctionEq for Function {
+
+    fn eq(&self, other: &Function) -> bool {
+
+        // TODO
+        false
+    }
 }
 
 impl FunctionOf for Function {
