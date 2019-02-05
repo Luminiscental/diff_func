@@ -1,6 +1,7 @@
 
 use std::rc::Rc;
 use std::fmt;
+use std::vec::Vec;
 
 // TODO: Simplify functions
 // TODO: Parse functions
@@ -11,11 +12,7 @@ pub trait FunctionTrait: fmt::Display {
 
     fn evaluate(&self, x: &f64) -> f64;
     fn diff(&self) -> Function;
-}
-
-pub trait FunctionEq {
-
-    fn eq(&self, other: &Self) -> bool;
+    fn expand(&self) -> Vec<Function>;
 }
 
 pub trait FunctionOf {
@@ -36,15 +33,6 @@ pub trait FunctionMul {
 pub trait FunctionDiv {
 
     fn div(self, other: Self) -> Self;
-}
-
-impl FunctionEq for Function {
-
-    fn eq(&self, other: &Function) -> bool {
-
-        // TODO
-        false
-    }
 }
 
 impl FunctionOf for Function {
@@ -108,6 +96,23 @@ impl FunctionTrait for SumFunction {
         
         self.left.diff().add(self.right.diff())
     }
+
+    fn expand(&self) -> Vec<Function> {
+
+        let mut result = Vec::new();
+
+        for exp in self.left.expand() {
+
+            result.push(exp);
+        }
+
+        for exp in self.right.expand() {
+
+            result.push(exp);
+        }
+
+        result 
+    }
 }
 
 impl fmt::Display for SumFunction {
@@ -152,6 +157,24 @@ impl FunctionTrait for ProductFunction {
 
         l_term.add(r_term)
     }
+
+    fn expand(&self) -> Vec<Function> {
+
+        let l_exps = self.left.expand();
+        let r_exps = self.right.expand();
+
+        let mut result = Vec::new();
+
+        for l_exp in &l_exps {
+
+            for r_exp in &r_exps {
+                
+                result.push(ProductFunction::new(Rc::clone(l_exp), Rc::clone(r_exp)));
+            }
+        }
+
+        result
+    }
 }
 
 impl fmt::Display for ProductFunction {
@@ -192,6 +215,12 @@ impl FunctionTrait for ComposedFunction {
 
         s_diff.of(t_clone).mul(t_diff)
     }
+
+    fn expand(&self) -> Vec<Function> {
+
+        // TODO: Cancel inverses
+        vec![ComposedFunction::new(Rc::clone(&self.source), Rc::clone(&self.target))]
+    }
 }
 
 impl fmt::Display for ComposedFunction {
@@ -205,6 +234,7 @@ impl fmt::Display for ComposedFunction {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum UnaryFunction {
 
     Const(f64),
@@ -249,6 +279,11 @@ impl FunctionTrait for UnaryFunction {
             UnaryFunction::Exp => UnaryFunction::Exp.new(),
             UnaryFunction::Log => UnaryFunction::Const(1.0).new().div(UnaryFunction::Id.new()),
         }
+    }
+
+    fn expand(&self) -> Vec<Function> {
+
+        vec![self.new()]
     }
 }
 
