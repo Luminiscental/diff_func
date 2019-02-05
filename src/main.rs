@@ -8,9 +8,9 @@ fn diff_and_print(name: &str, f: Function) {
 
 fn main() {
 
-    let sinc = UnaryFunction::Sin.new().div(UnaryFunction::Id.new());
-    let log_div_x = UnaryFunction::Log.new().div(UnaryFunction::Id.new());
-    let llc = UnaryFunction::Log.new().of(UnaryFunction::Log.new().of(UnaryFunction::Cos.new()));
+    let sinc = UnaryFunction::Sin.new().div(UnaryFunction::Id.new()).expand();
+    let log_div_x = UnaryFunction::Log.new().div(UnaryFunction::Id.new()).expand();
+    let llc = UnaryFunction::Log.new().of(UnaryFunction::Log.new().of(UnaryFunction::Cos.new())).expand();
 
     diff_and_print("f", sinc);
     diff_and_print("g", log_div_x);

@@ -12,7 +12,15 @@ pub trait FunctionTrait: fmt::Display {
 
     fn evaluate(&self, x: &f64) -> f64;
     fn diff(&self) -> Function;
-    fn expand(&self) -> Vec<Function>;
+    fn expand_vec(&self) -> Vec<Function>;
+}
+
+impl FunctionTrait {
+
+    pub fn expand(&self) -> Function {
+
+        SumFunction::from_many(&self.expand_vec())
+    }
 }
 
 pub trait FunctionOf {
@@ -23,6 +31,16 @@ pub trait FunctionOf {
 pub trait FunctionAdd {
 
     fn add(self, other: Self) -> Self;
+}
+
+pub trait FunctionSub {
+
+    fn sub(self, other: Self) -> Self;
+}
+
+pub trait FunctionNeg {
+
+    fn neg(self) -> Self;
 }
 
 pub trait FunctionMul {
@@ -51,6 +69,22 @@ impl FunctionAdd for Function {
     }
 }
 
+impl FunctionSub for Function {
+
+    fn sub(self, other: Function) -> Function {
+
+        DifferenceFunction::new(self, other)
+    }
+}
+
+impl FunctionNeg for Function {
+
+    fn neg(self) -> Function {
+
+        NegativeFunction::new(self)
+    }
+}
+
 impl FunctionMul for Function {
 
     fn mul(self, other: Function) -> Function {
@@ -63,11 +97,7 @@ impl FunctionDiv for Function {
 
     fn div(self, other: Function) -> Function {
 
-        let log_of = UnaryFunction::Log.new().of(other);
-        let neg_log = UnaryFunction::Const(-1.0).new().mul(log_of);
-        let reciprocal = UnaryFunction::Exp.new().of(neg_log);
-
-        self.mul(reciprocal)
+        QuotientFunction::new(self, other)
     }
 }
 
@@ -83,6 +113,17 @@ impl SumFunction {
 
         Rc::new(SumFunction { left, right })
     }
+
+    pub fn from_many(many: &[Function]) -> Function {
+
+        match many {
+
+            [] => panic!("Cannot sum an empty list!"),
+            [single] => Rc::clone(single),
+            [left, right] => SumFunction::new(Rc::clone(left), Rc::clone(right)),
+            _ => SumFunction::new(Rc::clone(&many[0]), SumFunction::from_many(&many[1..])),
+        }
+    }
 }
 
 impl FunctionTrait for SumFunction {
@@ -97,16 +138,16 @@ impl FunctionTrait for SumFunction {
         self.left.diff().add(self.right.diff())
     }
 
-    fn expand(&self) -> Vec<Function> {
+    fn expand_vec(&self) -> Vec<Function> {
 
         let mut result = Vec::new();
 
-        for exp in self.left.expand() {
+        for exp in self.left.expand_vec() {
 
             result.push(exp);
         }
 
-        for exp in self.right.expand() {
+        for exp in self.right.expand_vec() {
 
             result.push(exp);
         }
@@ -120,6 +161,97 @@ impl fmt::Display for SumFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
         write!(f, "({} + {})", self.left.to_string(), self.right.to_string())
+    }
+}
+
+pub struct DifferenceFunction {
+
+    left: Function,
+    right: Function,
+}
+
+impl DifferenceFunction {
+
+    fn new(left: Function, right: Function) -> Function {
+
+        Rc::new(DifferenceFunction { left, right })
+    }
+}
+
+impl FunctionTrait for DifferenceFunction {
+
+    fn evaluate(&self, x: &f64) -> f64 {
+
+        self.left.evaluate(x) - self.right.evaluate(x)
+    }
+
+    fn diff(&self) -> Function {
+        
+        self.left.diff().sub(self.right.diff())
+    }
+
+    fn expand_vec(&self) -> Vec<Function> {
+
+        let mut result = Vec::new();
+
+        for exp in self.left.expand_vec() {
+
+            result.push(exp);
+        }
+
+        for exp in self.right.expand_vec() {
+
+            result.push(exp.neg());
+        }
+
+        result 
+    }
+}
+
+impl fmt::Display for DifferenceFunction {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        write!(f, "({} - {})", self.left.to_string(), self.right.to_string())
+    }
+}
+
+pub struct NegativeFunction {
+
+    source: Function,
+}
+
+impl NegativeFunction {
+
+    fn new(source: Function) -> Function {
+
+        Rc::new(NegativeFunction { source })
+    }
+}
+
+impl FunctionTrait for NegativeFunction {
+
+    fn evaluate(&self, x: &f64) -> f64 {
+
+        -self.source.evaluate(x)
+    }
+
+    fn diff(&self) -> Function {
+
+        self.source.diff().neg()
+    }
+
+    fn expand_vec(&self) -> Vec<Function> {
+
+        vec![Rc::clone(&self.source).neg()]
+    }
+}
+
+impl fmt::Display for NegativeFunction {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        write!(f, "-{}", self.source.to_string())
     }
 }
 
@@ -158,10 +290,10 @@ impl FunctionTrait for ProductFunction {
         l_term.add(r_term)
     }
 
-    fn expand(&self) -> Vec<Function> {
+    fn expand_vec(&self) -> Vec<Function> {
 
-        let l_exps = self.left.expand();
-        let r_exps = self.right.expand();
+        let l_exps = self.left.expand_vec();
+        let r_exps = self.right.expand_vec();
 
         let mut result = Vec::new();
 
@@ -169,7 +301,7 @@ impl FunctionTrait for ProductFunction {
 
             for r_exp in &r_exps {
                 
-                result.push(ProductFunction::new(Rc::clone(l_exp), Rc::clone(r_exp)));
+                result.push(Rc::clone(l_exp).mul(Rc::clone(r_exp)));
             }
         }
 
@@ -182,6 +314,63 @@ impl fmt::Display for ProductFunction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
         write!(f, "({} * {})", self.left.to_string(), self.right.to_string())
+    }
+}
+
+pub struct QuotientFunction {
+
+    top: Function,
+    bottom: Function,
+}
+
+impl QuotientFunction {
+
+    fn new(top: Function, bottom: Function) -> Function {
+
+        Rc::new(QuotientFunction { top, bottom })
+    }
+}
+
+impl FunctionTrait for QuotientFunction {
+
+    fn evaluate(&self, x: &f64) -> f64 {
+
+        self.top.evaluate(x) / self.bottom.evaluate(x)
+    }
+
+    fn diff(&self) -> Function {
+
+        let t_diff = self.top.diff();
+        let b_diff = self.bottom.diff();
+
+        let b_sqr = Rc::clone(&self.bottom).mul(Rc::clone(&self.bottom));
+
+        let l_term = t_diff.mul(Rc::clone(&self.bottom));
+        let r_term = b_diff.mul(Rc::clone(&self.top));
+
+        (l_term.sub(r_term)).div(b_sqr)
+    }
+
+    fn expand_vec(&self) -> Vec<Function> {
+
+        let t_exps = self.top.expand_vec();
+
+        let mut result = Vec::new();
+
+        for t_exp in &t_exps {
+
+            result.push(Rc::clone(t_exp).div(Rc::clone(&self.bottom)));
+        }
+
+        result
+    }
+}
+
+impl fmt::Display for QuotientFunction {
+
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        write!(f, "({} / {})", self.top.to_string(), self.bottom.to_string())
     }
 }
 
@@ -216,10 +405,10 @@ impl FunctionTrait for ComposedFunction {
         s_diff.of(t_clone).mul(t_diff)
     }
 
-    fn expand(&self) -> Vec<Function> {
+    fn expand_vec(&self) -> Vec<Function> {
 
         // TODO: Cancel inverses
-        vec![ComposedFunction::new(Rc::clone(&self.source), Rc::clone(&self.target))]
+        vec![Rc::clone(&self.source).of(Rc::clone(&self.target))]
     }
 }
 
@@ -275,13 +464,13 @@ impl FunctionTrait for UnaryFunction {
             UnaryFunction::Const(_) => UnaryFunction::Const(0.0).new(),
             UnaryFunction::Id => UnaryFunction::Const(1.0).new(),
             UnaryFunction::Sin => UnaryFunction::Cos.new(),
-            UnaryFunction::Cos => UnaryFunction::Const(-1.0).new().mul(UnaryFunction::Sin.new()),
+            UnaryFunction::Cos => UnaryFunction::Sin.new().neg(),
             UnaryFunction::Exp => UnaryFunction::Exp.new(),
             UnaryFunction::Log => UnaryFunction::Const(1.0).new().div(UnaryFunction::Id.new()),
         }
     }
 
-    fn expand(&self) -> Vec<Function> {
+    fn expand_vec(&self) -> Vec<Function> {
 
         vec![self.new()]
     }
