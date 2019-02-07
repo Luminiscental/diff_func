@@ -130,7 +130,7 @@ impl FunctionTrait for SumFunction {
 
     fn eval(&self, x: &f64) -> f64 {
 
-        self.left.eval(x) + self.right.evaluate(x)
+        self.left.eval(x) + self.right.eval(x)
     }
 
     fn diff(&self) -> Function {
@@ -182,7 +182,7 @@ impl FunctionTrait for DifferenceFunction {
 
     fn eval(&self, x: &f64) -> f64 {
 
-        self.left.eval(x) - self.right.evaluate(x)
+        self.left.eval(x) - self.right.eval(x)
     }
 
     fn diff(&self) -> Function {
@@ -273,7 +273,7 @@ impl FunctionTrait for ProductFunction {
 
     fn eval(&self, x: &f64) -> f64 {
 
-        self.left.eval(x) * self.right.evaluate(x)
+        self.left.eval(x) * self.right.eval(x)
     }
 
     fn diff(&self) -> Function {
@@ -335,7 +335,7 @@ impl FunctionTrait for QuotientFunction {
 
     fn eval(&self, x: &f64) -> f64 {
 
-        self.top.eval(x) / self.bottom.evaluate(x)
+        self.top.eval(x) / self.bottom.eval(x)
     }
 
     fn diff(&self) -> Function {
@@ -392,7 +392,7 @@ impl FunctionTrait for ComposedFunction {
 
     fn eval(&self, x: &f64) -> f64 {
 
-        self.source.eval(&self.target.evaluate(x))
+        self.source.eval(&self.target.eval(x))
     }
 
     fn diff(&self) -> Function {
@@ -583,5 +583,30 @@ mod test {
         let sin_of_sqr = UnaryFunction::Sin.new().of(x_sqr);
         assert_eq!(sin_of_sqr.eval(&-1.0), 1f64.sin());
     }
+
+    #[test]
+    fn eval_expand() {
+
+        let x_sqr = UnaryFunction::Id.new().mul(UnaryFunction::Id.new());
+        let x_plus_sqr = UnaryFunction::Id.new().add(x_sqr);
+        assert_eq!(x_plus_sqr.expand().eval(&-2.0), x_plus_sqr.eval(&-2.0));
+    }
+
+    /*
+    
+    TODO: Equivalency
+
+    #[test]
+    fn diff_sum() {
+
+        let x_sqr = UnaryFunction::Id.new().mul(UnaryFunction::Id.new());
+        let x_plus_sqr = UnaryFunction::Id.new().add(x_sqr);
+
+        let one = UnaryFunction::Const(1.0).new();
+        let two_x = UnaryFunction::Const(2.0).new().mul(UnaryFunction::Id.new());
+        assert_eq!(x_plus_sqr.diff(), one.add(two_x));
+    }
+
+    */
 }
 
