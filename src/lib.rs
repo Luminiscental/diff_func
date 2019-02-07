@@ -10,7 +10,7 @@ pub type Function = Rc<dyn FunctionTrait>;
 
 pub trait FunctionTrait: fmt::Display {
 
-    fn evaluate(&self, x: &f64) -> f64;
+    fn eval(&self, x: &f64) -> f64;
     fn diff(&self) -> Function;
     fn expand_vec(&self) -> Vec<Function>;
 }
@@ -128,9 +128,9 @@ impl SumFunction {
 
 impl FunctionTrait for SumFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
-        self.left.evaluate(x) + self.right.evaluate(x)
+        self.left.eval(x) + self.right.evaluate(x)
     }
 
     fn diff(&self) -> Function {
@@ -180,9 +180,9 @@ impl DifferenceFunction {
 
 impl FunctionTrait for DifferenceFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
-        self.left.evaluate(x) - self.right.evaluate(x)
+        self.left.eval(x) - self.right.evaluate(x)
     }
 
     fn diff(&self) -> Function {
@@ -231,9 +231,9 @@ impl NegativeFunction {
 
 impl FunctionTrait for NegativeFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
-        -self.source.evaluate(x)
+        -self.source.eval(x)
     }
 
     fn diff(&self) -> Function {
@@ -271,9 +271,9 @@ impl ProductFunction {
 
 impl FunctionTrait for ProductFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
-        self.left.evaluate(x) * self.right.evaluate(x)
+        self.left.eval(x) * self.right.evaluate(x)
     }
 
     fn diff(&self) -> Function {
@@ -333,9 +333,9 @@ impl QuotientFunction {
 
 impl FunctionTrait for QuotientFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
-        self.top.evaluate(x) / self.bottom.evaluate(x)
+        self.top.eval(x) / self.bottom.evaluate(x)
     }
 
     fn diff(&self) -> Function {
@@ -390,9 +390,9 @@ impl ComposedFunction {
 
 impl FunctionTrait for ComposedFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
-        self.source.evaluate(&self.target.evaluate(x))
+        self.source.eval(&self.target.evaluate(x))
     }
 
     fn diff(&self) -> Function {
@@ -444,7 +444,7 @@ impl UnaryFunction {
 
 impl FunctionTrait for UnaryFunction {
 
-    fn evaluate(&self, x: &f64) -> f64 {
+    fn eval(&self, x: &f64) -> f64 {
 
         match self {
 
@@ -491,6 +491,97 @@ impl fmt::Display for UnaryFunction {
         };
 
         write!(f, "({})", plain)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn eval_const() {
+
+        let two = UnaryFunction::Const(2.0).new();
+        assert_eq!(two.eval(&1.0), 2.0);
+    }
+
+    #[test]
+    fn eval_id() {
+
+        let id = UnaryFunction::Id.new();
+        assert_eq!(id.eval(&3.0), 3.0);
+    }
+
+    #[test]
+    fn eval_sin() {
+
+        let sin = UnaryFunction::Sin.new();
+        assert_eq!(sin.eval(&4.0), 4f64.sin());
+    }
+
+    #[test]
+    fn eval_cos() {
+
+        let cos = UnaryFunction::Cos.new();
+        assert_eq!(cos.eval(&5.0), 5f64.cos());
+    }
+
+    #[test]
+    fn eval_exp() {
+
+        let exp = UnaryFunction::Exp.new();
+        assert_eq!(exp.eval(&6.0), 6f64.exp());
+    }
+
+    #[test]
+    fn eval_log() {
+
+        let log = UnaryFunction::Log.new();
+        assert_eq!(log.eval(&7.0), 7f64.ln());
+    }
+
+    #[test]
+    fn eval_sum() {
+
+        let three = UnaryFunction::Const(3.0).new().add(UnaryFunction::Const(2.0).new());
+        assert_eq!(three.eval(&8.0), 5.0);
+    }
+
+    #[test]
+    fn eval_diff() {
+
+        let three_minus_x = UnaryFunction::Const(3.0).new().sub(UnaryFunction::Id.new());
+        assert_eq!(three_minus_x.eval(&9.0), -6.0);
+    }
+
+    #[test]
+    fn eval_neg() {
+
+        let minus_x = UnaryFunction::Id.new().neg();
+        assert_eq!(minus_x.eval(&10.0), -10.0);
+    }
+
+    #[test]
+    fn eval_mul() {
+
+        let x_sqr = UnaryFunction::Id.new().mul(UnaryFunction::Id.new());
+        assert_eq!(x_sqr.eval(&11.0), 121.0);
+    }
+
+    #[test]
+    fn eval_div() {
+
+        let inv = UnaryFunction::Const(1.0).new().div(UnaryFunction::Id.new());
+        assert_eq!(inv.eval(&12.0), 1.0 / 12.0);
+    }
+
+    #[test]
+    fn eval_comp() {
+
+        let x_sqr = UnaryFunction::Id.new().mul(UnaryFunction::Id.new());
+        let sin_of_sqr = UnaryFunction::Sin.new().of(x_sqr);
+        assert_eq!(sin_of_sqr.eval(&-1.0), 1f64.sin());
     }
 }
 
