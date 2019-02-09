@@ -160,7 +160,7 @@ impl fmt::Display for SumFunction {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        write!(f, "({} + {})", self.left.to_string(), self.right.to_string())
+        write!(f, "({}) + ({})", self.left.to_string(), self.right.to_string())
     }
 }
 
@@ -212,7 +212,7 @@ impl fmt::Display for DifferenceFunction {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        write!(f, "({} - {})", self.left.to_string(), self.right.to_string())
+        write!(f, "({}) - ({})", self.left.to_string(), self.right.to_string())
     }
 }
 
@@ -243,7 +243,7 @@ impl FunctionTrait for NegativeFunction {
 
     fn expand_vec(&self) -> Vec<Function> {
 
-        vec![Rc::clone(&self.source).neg()]
+        self.source.expand_vec().iter().map(|term| { Rc::clone(&term).neg() }).collect()
     }
 }
 
@@ -251,7 +251,7 @@ impl fmt::Display for NegativeFunction {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        write!(f, "-{}", self.source.to_string())
+        write!(f, "-({})", self.source.to_string())
     }
 }
 
@@ -313,7 +313,7 @@ impl fmt::Display for ProductFunction {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        write!(f, "({} * {})", self.left.to_string(), self.right.to_string())
+        write!(f, "({}) * ({})", self.left.to_string(), self.right.to_string())
     }
 }
 
@@ -370,7 +370,7 @@ impl fmt::Display for QuotientFunction {
 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        write!(f, "({} / {})", self.top.to_string(), self.bottom.to_string())
+        write!(f, "({}) / ({})", self.top.to_string(), self.bottom.to_string())
     }
 }
 
@@ -419,7 +419,7 @@ impl fmt::Display for ComposedFunction {
         let source_of_x = self.source.to_string();
         let target_of_x = self.target.to_string();
 
-        write!(f, "{}", source_of_x.replace("(x)", &target_of_x))
+        write!(f, "{}", source_of_x.replace("$", &target_of_x))
     }
 }
 
@@ -483,14 +483,14 @@ impl fmt::Display for UnaryFunction {
         let plain = match self {
 
             UnaryFunction::Const(c) => c.to_string(),
-            UnaryFunction::Id => String::from("x"),
-            UnaryFunction::Sin => String::from("sin(x)"),
-            UnaryFunction::Cos => String::from("cos(x)"),
-            UnaryFunction::Exp => String::from("exp(x)"),
-            UnaryFunction::Log => String::from("ln(x)"),
+            UnaryFunction::Id => String::from("$"),
+            UnaryFunction::Sin => String::from("sin($)"),
+            UnaryFunction::Cos => String::from("cos($)"),
+            UnaryFunction::Exp => String::from("exp($)"),
+            UnaryFunction::Log => String::from("ln($)"),
         };
 
-        write!(f, "({})", plain)
+        write!(f, "{}", plain)
     }
 }
 
